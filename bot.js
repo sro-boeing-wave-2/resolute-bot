@@ -29,7 +29,7 @@ class Bot {
     this.connection = await socket.createConnection();
     this.connection.on('message', this.addMessage.bind(this));
     this.assignMeToUser();
-    this.run();
+    await this.run();
   }
 
   assignMeToUser() {
@@ -46,15 +46,10 @@ class Bot {
     this.connection.invoke('SendMessage', message);
   }
 
-  run() {
-    async.waterfall([
-      this.findProblem.bind(this),
-      this.findTemplate.bind(this),
-      this.executeTemplate.bind(this),
-    ], function(err, result) {
-      console.log('error', err);
-      console.log('result', result);
-    });
+  async run() {
+    const problem = await this.findProblem();
+    const template = await Bot.findTemplate(problem);
+    await this.executeTemplate(template);
   }
 
   handover() {
@@ -64,16 +59,15 @@ class Bot {
 
   enquire(task, callback) {
     const ask = () => this.sendMessage(task.commands[0]);
-
     const registerDataAndCallback = (subscription, data) => {
       subscription.unsubscribe();
-      this.data[task.register] = data;
+      this.data[task.schema.register] = data;
       callback(null);
     };
 
     const subscription = this.inbox.subscribe(async (message) => {
-      const response = await this.analyzeText(message);
-      const data = response.all(task.type)[0].raw;
+      const response = await Bot.analyzeText(message);
+      const data = response.all(task.schema.type)[0].raw;
       if (data) {
         registerDataAndCallback(subscription, data);
       } else {
@@ -91,10 +85,16 @@ class Bot {
 
   action(task, callback) {
     this.sendMessage(`Checking details`);
+
     shelljs.exec(`ansible-playbook ${this.playbookName} --extra-vars '${JSON.stringify(this.data)}' --tags "${task.tags[0]}"`);
+
     client.hget(this.threadId, task.register, (err, value) => {
-      this.data[task.register] = JSON.parse(value);
-      callback(null);
+      if (!err) {
+        this.data[task.register] = JSON.parse(value);
+        callback(null);
+      } else {
+        throw new Error('FETCH_DATA_REDIS_FAILED');
+      }
     });
   }
 
@@ -103,22 +103,28 @@ class Bot {
     this.sendMessage(response);
   }
 
-  findProblem(callback) {
-    const response = await this.analyzeText(this.query);
+  async findProblem() {
+    const response = await Bot.analyzeText(this.query);
     const intent = response.intent();
     if (!intent) {
+      throw new Error('PROBLEM_NOT_FOUND');
+    } else {
       this.intent = intent;
       this.sendMessage(`Seems like you have problem with ${this.intent.description}`);
-      callback(null, intent);
-    } else {
-      throw 'PROBLEM_NOT_FOUND';
+      return intent;
     }
   }
 
   static async findTemplate(intent) {
-    const response = await axios.get(`http://localhost:8081/api/solution/${intent}`);}
+    const response = await axios.get(`http://localhost:8081/api/solution/new_greetings`);
     const template = response.data;
-    return template[0];
+    console.log(template.tasks);
+    if (!(template && template[0])) {
+      throw new Error('TEMPLATE_NOT_FOUND');
+    }
+    else {
+      return template[0];
+    }
   }
 
   createPlaybook(threadId, actionables) {
@@ -127,16 +133,15 @@ class Bot {
     this.playbookName = playbookName;
   }
 
-  async executeTemplate(template, callback) {
-    const templateOfActionables = template.Actions;
-    const tasks = mustache.render(templateOfActionables, this, null, ['{{{', '}}}']);
-    this.createPlaybook(this.threadId, tasks);
-    const executors = template.Tasks.map(task => this[task.stage].bind(this, task));
+  async executeTemplate(template) {
     try {
+      const templateOfActionables = template.Actions;
+      const tasks = mustache.render(templateOfActionables, this, null, ['{{{', '}}}']);
+      this.createPlaybook(this.threadId, tasks);
+      const executors = template.Tasks.map(task => this[task.stage].bind(this, task));
       await async.series(executors);
     } catch (exception) {
-      console.log('exception');
-      console.log(exception);
+      throw new Error('TEMPLATE_EXECUTION_FAILED');
     }
   }
 }

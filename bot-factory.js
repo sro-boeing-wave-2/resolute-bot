@@ -1,4 +1,4 @@
-// const Bot = require('./bot');
+const Bot = require('./bot');
 const socket = require('./socket.js');
 
 module.exports = (async () => {
@@ -14,6 +14,7 @@ module.exports = (async () => {
     try {
       await new Bot(threadId, problem).init();
     } catch (err) {
+      console.log('error', err);
       console.log('Catching the Bot');
     }
   });
