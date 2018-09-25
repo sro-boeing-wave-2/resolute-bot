@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Get Data from Github.com
+      uri:
+        url: https://api.github.com
+        return_content: yes
+      register: gitdata
+      headers:
+        Content-Type: application/json

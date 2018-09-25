@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  gather_facts: true
+  tasks:
+    - name: Do ping
+      command: ping localhost -c 1
+    - name: Get data from Github.com
+      uri:
+        url: https://api.github.com/
+        return_content: yes
+      register: gitdata
+      headers:
+        Content-Type: "application/x-www-form-urlencoded"
+      tags:
+        - get-gitdata
+    - name: Store gitdata in redis
+      shell: redis-cli HSET test24 gitdata {{ gitdata.content }}
+      tags:
+        - get-gitdata
+    - debug: msg="{{ gitdata }}"
+    - name: Store data in file
+      copy:
+        content: "{{ gitdata.json | to_nice_json(indent=2) }}"
+        dest: ./gitdata.json
+    - name:  Store current_user_url
+      copy:
+        content: "{{ { 'data1': gitdata.json.current_user_url} | combine({ 'data2': gitdata.json }) | to_nice_json(indent=2)  }}"
+        dest: ./test-content

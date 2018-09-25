@@ -1,0 +1,20 @@
+---
+    - hosts: 127.0.0.1
+      gather_facts: facts
+      tasks:
+        - name: Get data from Github.com
+          uri:
+            url: https:&#x2F;&#x2F;api.github.com
+            return_content: yes
+          register: gitdata
+          headers:
+            Content-Type: "application/x-www-form-urlencoded"
+        - name: Store data in file
+          copy:
+            content: ""
+            dest: ./gitdata.json
+        - name:  Store current_user_url
+          copy:
+            content: ""
+            dest: ./test-content
+

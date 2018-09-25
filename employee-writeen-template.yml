@@ -1,0 +1,16 @@
+  ---
+  - stage: enquire
+    commands:
+      - Can you share your emailId?
+    register: emailId
+    type: email
+  - stage: action
+    name: Get Data from Github.com
+    uri:
+      url: https://api.github.com
+      return_content: yes
+    register: gitdata
+    headers:
+      Content-Type: application/json
+  - stage: response
+    template: Hey {{emailId}}, this is the url of your repository {{github-data.json.url}}
