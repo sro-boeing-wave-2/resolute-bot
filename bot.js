@@ -6,10 +6,11 @@ const redis = require('redis');
 const mustache = require('mustache');
 const axios = require('axios');
 const { Subject } = require('rxjs');
+const appConfig = require('./app.config');
 
 const socket = require('./socket.js');
 
-const client = redis.createClient()
+const client = redis.createClient(appConfig.REDIS_URL);
 
 // const MailBox = require('./mailbox');
 
@@ -29,7 +30,11 @@ class Bot {
     this.connection = await socket.createConnection();
     this.connection.on('message', this.addMessage.bind(this));
     this.assignMeToUser();
-    await this.run();
+    try {
+      await this.run();
+    } catch(err) {
+      this.handover();
+    }
   }
 
   assignMeToUser() {
@@ -54,7 +59,7 @@ class Bot {
 
   handover() {
     this.sendMessage("Seems like I don't understand that. Will handover to a Human Agent.");
-    this.connection.invoke('AssignAgentToUser', this.threadId);
+    this.connection.invoke('Handover', this.threadId, this.data);
   }
 
   enquire(task, callback) {

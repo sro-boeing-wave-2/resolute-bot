@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
+    "start": "node bot-factory.js",
     "test": "./node_modules/.bin/mocha tests/*.test.js"
   },
   "dependencies": {
