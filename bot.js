@@ -10,7 +10,11 @@ const appConfig = require('./app.config');
 
 const socket = require('./socket.js');
 
-const client = redis.createClient(appConfig.REDIS_URL);
+const client = redis.createClient({
+  url: appConfig.REDIS_URL,
+  port: appConfig.REDIS_PORT,
+  retry_strategy: options => Math.min(options.attempt * 100, 3000),
+});
 
 // const MailBox = require('./mailbox');
 
@@ -33,11 +37,13 @@ class Bot {
     try {
       await this.run();
     } catch(err) {
+      console.log(err);
       this.handover();
     }
   }
 
   assignMeToUser() {
+    console.log(this.threadId);
     this.connection.invoke('AssignMeToUser', this.threadId);
   }
 
@@ -47,14 +53,23 @@ class Bot {
   }
 
   sendMessage(message) {
-    this.thread.push(message);
-    this.connection.invoke('SendMessage', message);
+    const messageWrapper = {
+      name: appConfig.BOT_NAME,
+      emailId: appConfig.BOT_EMAILID,
+      messageText: message,
+    };
+    this.thread.push(messageWrapper);
+    this.connection.invoke('SendMessage', messageWrapper);
   }
 
   async run() {
-    const problem = await this.findProblem();
-    const template = await Bot.findTemplate(problem);
-    await this.executeTemplate(template);
+    try {
+      const problem = await this.findProblem();
+      const template = await Bot.findTemplate(problem);
+      await this.executeTemplate(template);
+    } catch (err) {
+      console.log(`error inside run ${err}`);
+    }
   }
 
   handover() {
@@ -71,7 +86,7 @@ class Bot {
     };
 
     const subscription = this.inbox.subscribe(async (message) => {
-      const response = await Bot.analyzeText(message);
+      const response = await Bot.analyzeText(message.messageText);
       const data = response.all(task.schema.type)[0].raw;
       if (data) {
         registerDataAndCallback(subscription, data);
@@ -89,7 +104,7 @@ class Bot {
   }
 
   action(task, callback) {
-    this.sendMessage(`Checking details`);
+    this.sendMessage('Checking details');
 
     shelljs.exec(`ansible-playbook ${this.playbookName} --extra-vars '${JSON.stringify(this.data)}' --tags "${task.tags[0]}"`);
 
@@ -112,7 +127,8 @@ class Bot {
     const response = await Bot.analyzeText(this.query);
     const intent = response.intent();
     if (!intent) {
-      throw new Error('PROBLEM_NOT_FOUND');
+      console.log('Problem not found');
+      throw 'PROBLEM_NOT_FOUND';
     } else {
       this.intent = intent;
       this.sendMessage(`Seems like you have problem with ${this.intent.description}`);
@@ -121,7 +137,8 @@ class Bot {
   }
 
   static async findTemplate(intent) {
-    const response = await axios.get(`http://localhost:8081/api/solution/new_greetings`);
+    console.log('finding intent');
+    const response = await axios.get(`${appConfig.SOLUTION_EXPLORER_API}/${intent}`);
     const template = response.data;
     console.log(template.tasks);
     if (!(template && template[0])) {
