@@ -1,12 +1,12 @@
-FROM node:8
+FROM node:8.2-alpine
 
 WORKDIR /usr/src/app
 
 COPY package.json .
 
-RUN yarn install
+RUN npm install
 
 COPY . .
 
-CMD [ "yarn", "start"]
+CMD [ "npm", "start"]
 

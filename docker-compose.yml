@@ -6,8 +6,9 @@ services:
       - redis
     network_mode: host
     environment:
-      RTM_HUB_URL: http://172.23.239.55:5000/ChatHub
+      RTM_HUB_URL: http://172.23.239.83:5000/ChatHub
       REDIS_URL: http://redis:6379
+      SOLUTION_EXPLORER_API: http://172.23.239.83:8081/api/solution
   redis:
     image: redis:3.2-alpine
     network_mode: host
