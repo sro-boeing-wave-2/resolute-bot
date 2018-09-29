@@ -102,7 +102,7 @@ class Bot {
 
     const subscription = this.inbox.subscribe(async (message) => {
       console.log('message is', message);
-      const response = await Bot.analyzeText(message);
+      const response = await Bot.analyzeText(message.messageText);
       console.log(response);
       const data = response.all(task.schema.type)[0].raw;
       if (data) {
