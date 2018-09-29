@@ -32,6 +32,8 @@ class Bot {
     this.data = {};
     this.intent = 'NotFound';
     this.thread = [];
+    this.REDIS_PORT = process.env.REDIS_PORT;
+    this.REDIS_HOST = process.env.REDIS_HOST;
     span.finish();
   }
 
