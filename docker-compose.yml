@@ -11,8 +11,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SOLUTION_EXPLORER_API: http://172.23.239.83:8081/api/solution
+    restart: always
   redis:
     image: redis:3.2-alpine
     network_mode: host
-
+    restart: always
 
