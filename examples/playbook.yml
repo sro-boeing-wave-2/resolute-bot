@@ -7,10 +7,11 @@
     - name: Get data from Github.com
       uri:
         url: https://api.github.com/
+        validate_certs: false
         return_content: yes
+        headers:
+          Content-Type: "application/x-www-form-urlencoded"
       register: gitdata
-      headers:
-        Content-Type: "application/x-www-form-urlencoded"
       tags:
         - get-gitdata
     - name: Store gitdata in redis

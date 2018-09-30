@@ -9,9 +9,6 @@ const { Subject } = require('rxjs');
 
 const appConfig = require('./app.config');
 const socket = require('./socket.js');
-const { initJaegerTracer } = require('./tracing');
-
-const tracer = initJaegerTracer('Resolute-Ansible-Bot');
 
 const client = redis.createClient({
   url: appConfig.REDIS_URL,
@@ -25,48 +22,38 @@ mustache.escape = text => text;
 
 class Bot {
   constructor(threadId, query) {
-    const span = tracer.startSpan('constructing-bot');
     this.threadId = threadId;
     this.inbox = new Subject();
     this.query = query;
     this.data = {};
     this.intent = 'NotFound';
     this.thread = [];
-    this.REDIS_PORT = process.env.REDIS_PORT;
-    this.REDIS_HOST = process.env.REDIS_HOST;
-    span.finish();
+    this.REDIS_PORT = appConfig.REDIS_PORT;
+    this.REDIS_HOST = appConfig.REDIS_HOST;
   }
 
   async init() {
-    const span = tracer.startSpan('initializing-bot');
     this.connection = await socket.createConnection();
     this.connection.on('message', this.addMessage.bind(this));
     this.assignMeToUser();
-    span.finish();
     try {
       await this.run();
     } catch (err) {
-      const catchSpan = tracer.startSpan('handing-over');
       this.handover();
-      catchSpan.finish();
     }
   }
 
   assignMeToUser() {
-    const span = tracer.startSpan('attaching-to-user');
     this.connection.invoke('AssignMeToUser', this.threadId);
-    span.finish();
   }
 
   addMessage(message) {
-    const span = tracer.startSpan('push-msg-to-inbox');
     this.thread.push(message);
     this.inbox.next(message);
-    span.finish();
   }
 
   sendMessage(message) {
-    const sendMessageSpan = tracer.startSpan('sending-message');
+    console.log(message);
     const messageWrapper = {
       name: appConfig.BOT_NAME,
       emailId: appConfig.BOT_EMAILID,
@@ -74,15 +61,12 @@ class Bot {
     };
     this.thread.push(messageWrapper);
     this.connection.invoke('SendMessage', messageWrapper);
-    sendMessageSpan.finish();
   }
 
   async run() {
-    const runStages = tracer.startSpan('running-stages');
     const problem = await this.findProblem();
     const template = await Bot.findTemplate(problem);
     await this.executeTemplate(template);
-    runStages.finish();
   }
 
   handover() {
@@ -91,14 +75,12 @@ class Bot {
   }
 
   enquire(task, callback) {
-    const enquireTracer = tracer.startSpan('enquiring');
     const ask = () => {
       this.sendMessage(task.commands[0]);
     };
     const registerDataAndCallback = (subscription, data) => {
       subscription.unsubscribe();
       this.data[task.schema.register] = data;
-      enquireTracer.finish();
       callback(null);
     };
 
@@ -106,9 +88,9 @@ class Bot {
       console.log('message is', message);
       const response = await Bot.analyzeText(message.messageText);
       console.log(response);
-      const data = response.all(task.schema.type)[0].raw;
-      if (data) {
-        registerDataAndCallback(subscription, data);
+      const intents = response.all(task.schema.type);
+      if (intents && intents[0].raw) {
+        registerDataAndCallback(subscription, intents[0].raw);
       } else {
         ask();
       }
@@ -118,73 +100,59 @@ class Bot {
   }
 
   static async analyzeText(text) {
-    const analyzeTextTracer = tracer.startSpan('analyzing-text');
     const response = await recastRequest.analyseText(text);
-    analyzeTextTracer.finish();
     return response;
   }
 
   action(task, callback) {
     this.sendMessage('Checking details');
 
-    shelljs.exec(`ansible-playbook ${this.playbookName} --extra-vars '${JSON.stringify(this.data)}' --tags "${task.tags[0]}"`);
-
+    const exec = shelljs.exec(`ansible-playbook ${this.playbookName} --extra-vars '${JSON.stringify(this.data)}' --tags "${task.tags[0]}"`);
+    console.log(exec);
+    if (exec.code !== 0) {
+      throw new Error('ANSIBLE_SCRIPT_EXECUTION_FAILED');
+    }
     client.hget(this.threadId, task.register, (err, value) => {
       if (!err) {
         console.log(value);
         this.data[task.register] = JSON.parse(value);
         callback(null);
       } else {
-        throw new Error('FETCH_DATA_REDIS_FAILED');
+        throw new Error('REDIS_FETCH_DATA_FAILED');
       }
     });
   }
 
   response(task, callback) {
-    const responseTracer = tracer.startSpan('responding');
     const response = mustache.render(task.template, this.data);
     this.sendMessage(response);
-    responseTracer.finish();
     callback(null);
   }
 
   async findProblem() {
-    const problemTracer = tracer.startSpan('finding-problem');
     const response = await Bot.analyzeText(this.query);
     const intent = response.intent();
     if (!intent) {
-      problemTracer.log({ event: 'PROBLEM_NOT_FOUND' });
       console.log('Problem not found');
       throw new Error('PROBLEM_NOT_FOUND');
     } else {
-      problemTracer.log({ event: 'PROBLEM_FOUND' });
       this.intent = intent;
       this.sendMessage(`Seems like you have problem with ${this.intent.description}`);
-      problemTracer.finish();
       return intent;
     }
   }
 
   static async findTemplate(intent) {
-    const findTemplateTracer = tracer.startSpan('finding-template');
-    console.log('finding template');
-    console.log(intent);
     try {
-      const solutionExplorerTracer = tracer.startSpan('making-restcall-to-solution-explorer');
-      console.log(`${appConfig.SOLUTION_EXPLORER_API}/${intent.slug}`);
       const response = await axios.get(`${appConfig.SOLUTION_EXPLORER_API}/${intent.slug}`);
-      solutionExplorerTracer.finish();
       console.log(response.data);
       const template = response.data;
       if (!(template && template[0])) {
-        findTemplateTracer.log({ event: 'TEMPLATE_NOT_FOUND' });
         console.log(template.tasks);
         throw new Error('TEMPLATE_NOT_FOUND');
       }
       else {
-        findTemplateTracer.log({ event: 'TEMPLATE_FOUND' });
         const foundTemplate = template[0];
-        findTemplateTracer.finish();
         return foundTemplate;
       }
     } catch (err) {
@@ -194,29 +162,17 @@ class Bot {
   }
 
   createPlaybook(threadId, actionables) {
-    const createPlaybookTracer = tracer.startSpan('creating-playbook');
     const playbookName = `playbook-${threadId}.yml`;
     fs.writeFileSync(playbookName, actionables);
-    createPlaybookTracer.log({ event: 'PLAYBOOK_CREATED' });
     this.playbookName = playbookName;
-    createPlaybookTracer.finish();
   }
 
   async executeTemplate(template) {
-    try {
-      const executeTemplateTracer = tracer.startSpan('executing-template');
-      const templateOfActionables = template.Actions;
-      const renderTemplateTracer = tracer.startSpan('rendering-template');
-      const tasks = mustache.render(templateOfActionables, this, null, ['${{', '}}']);
-      renderTemplateTracer.log({ event: 'TEMPLATE_RENDERED' });
-      renderTemplateTracer.finish();
-      this.createPlaybook(this.threadId, tasks);
-      const executors = template.Tasks.map(task => this[task.stage].bind(this, task));
-      await async.series(executors);
-      executeTemplateTracer.finish();
-    } catch (exception) {
-      throw new Error('TEMPLATE_EXECUTION_FAILED');
-    }
+    const templateOfActionables = template.Actions;
+    const tasks = mustache.render(templateOfActionables, this, null, ['${{', '}}']);
+    this.createPlaybook(this.threadId, tasks);
+    const executors = template.Tasks.map(task => this[task.stage].bind(this, task));
+    await async.series(executors);
   }
 }
 
