@@ -29,12 +29,14 @@
     "tslib": "^1.9.3",
     "uuid": "^3.3.2",
     "websocket": "^1.0.28",
+    "winston": "^3.1.0",
     "xmlhttprequest": "^1.8.0",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.14.0",
+    "jest": "^23.6.0",
     "proxyquire": "^2.1.0"
   }
 }
