@@ -5,18 +5,20 @@ const winston = require('winston');
 
 const appConfig = require('./app.config');
 
+const exit = () => process.exit(1);
+
 // Creates a WebSocket Connection to the RTMHub
 const createConnection = async () => {
   try {
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl(appConfig.RTM_HUB_URL, {
-        serverTimeoutInMilliseconds: 1000 * 1000,
-      })
-      .build();
-    await connection.start();
+    const serverTimeoutInMilliseconds = 1000 * 1000;
+    const connection = await new signalR.HubConnectionBuilder()
+      .withUrl(appConfig.RTM_HUB_URL, { serverTimeoutInMilliseconds })
+      .build()
+      .start();
+    winston.log('RTM_HUB_CONNECTION_ESTABLISHED');
     return connection;
   } catch (err) {
-    winston.info("RTM_HUB_CONNECTION_REFUSED: Exiting Couldn't connect to RTM_HUB");
+    winston.error("RTM_HUB_CONNECTION_REFUSED: Exiting Couldn't connect to RTM_HUB");
     process.exit(1);
   }
 };
