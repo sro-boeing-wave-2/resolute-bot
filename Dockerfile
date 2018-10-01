@@ -19,8 +19,8 @@ WORKDIR /usr/src/app
 # Copy package.json
 COPY package.json .
 # Install all the dependencies
-RUN yarn install
+RUN npm install
 # Copy the remaining files
 COPY . .
 # Start the application
-CMD [ "yarn", "start"]
+CMD [ "npm", "start"]
