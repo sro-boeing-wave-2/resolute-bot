@@ -9,10 +9,10 @@ const appConfig = require('./app.config');
 const createConnection = async () => {
   try {
     const serverTimeoutInMilliseconds = 1000 * 1000;
-    const connection = await new signalR.HubConnectionBuilder()
+    const connection = new signalR.HubConnectionBuilder()
       .withUrl(appConfig.RTM_HUB_URL, { serverTimeoutInMilliseconds })
-      .build()
-      .start();
+      .build();
+    await connection.start();
     winston.info('RTM_HUB_CONNECTION_ESTABLISHED');
     return connection;
   } catch (err) {

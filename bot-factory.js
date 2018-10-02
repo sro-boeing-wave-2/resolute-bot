@@ -3,9 +3,11 @@ const socket = require('./socket.js');
 
 module.exports = (async () => {
   const connection = await socket.createConnection();
+  console.log(connection);
   if (connection) {
+    console.log(connection);
     connection.invoke('RegisterBotFactory');
-
+    console.log('invoked registerbotfactoy');
     connection.on('Acknowledgement', (message) => {
       console.log(`Registered as Factory, ${message}`);
     });
