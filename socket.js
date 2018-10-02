@@ -5,8 +5,6 @@ const winston = require('winston');
 
 const appConfig = require('./app.config');
 
-const exit = () => process.exit(1);
-
 // Creates a WebSocket Connection to the RTMHub
 const createConnection = async () => {
   try {
@@ -15,7 +13,7 @@ const createConnection = async () => {
       .withUrl(appConfig.RTM_HUB_URL, { serverTimeoutInMilliseconds })
       .build()
       .start();
-    winston.log('RTM_HUB_CONNECTION_ESTABLISHED');
+    winston.info('RTM_HUB_CONNECTION_ESTABLISHED');
     return connection;
   } catch (err) {
     winston.error(err);
