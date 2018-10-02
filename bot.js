@@ -126,6 +126,7 @@ class Bot {
   }
 
   response(task, callback) {
+    console.log(this.data);
     const response = mustache.render(task.template, this.data);
     this.sendMessage(response);
     callback(null);
