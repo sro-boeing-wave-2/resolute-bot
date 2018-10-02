@@ -111,7 +111,7 @@ class Bot {
     console.log(exec);
     if (exec.code !== 0) {
       console.log('ANSIBLE_SCRIPT_EXECUTION_FAILED');
-      this.handover();
+      callback(new Error('ANSIBLE_SCRIPT_EXECUTION_FAILED'));
     }
     client.hget(this.threadId, task.register, (err, value) => {
       if (!err) {
@@ -120,7 +120,7 @@ class Bot {
         callback(null);
       } else {
         console.log('REDIS_FETCH_DATA_FAILED');
-        this.handover();
+        callback(new Error('REDIS_FETCH_DATA_FAILED'));
       }
     });
   }
@@ -177,7 +177,12 @@ class Bot {
     const tasks = mustache.render(templateOfActionables, this, null, ['${{', '}}']);
     this.createPlaybook(this.threadId, tasks);
     const executors = template.Tasks.map(task => this[task.stage].bind(this, task));
-    await async.series(executors);
+    await async.series(executors, (err, cb) => {
+      if (err) {
+        console.log(err);
+        this.handover();
+      }
+    });
   }
 }
 
