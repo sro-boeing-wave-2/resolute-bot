@@ -144,7 +144,10 @@ class Bot {
 
   static async findTemplate(intent) {
     try {
-      const response = await axios.get(`${appConfig.SOLUTION_EXPLORER_API}/${intent.slug}`);
+      var config = {
+        headers: {'Access': 'Allow_Service'}
+      };
+      const response = await axios.get(`${appConfig.SOLUTION_EXPLORER_API}/${intent.slug}`, config);
       console.log(response.data);
       const template = response.data;
       if (!(template && template[0])) {

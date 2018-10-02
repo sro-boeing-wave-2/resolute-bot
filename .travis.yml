@@ -1,0 +1,10 @@
+notifications:
+  email:
+    on_success: always
+    on_failure: always
+  slack: srboeingdotnet:pZz5KfrgntyjLpS9a1d2b1rH
+mono: none
+script:
+  - chmod +x ./deploy.sh
+after_success:
+  - /bin/bash ./deploy.sh

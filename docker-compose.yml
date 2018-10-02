@@ -1,18 +1,19 @@
 version: '3'
 services:
   bot:
+    container_name: bot
     build: .
     depends_on:
       - redis
-    network_mode: host
+    labels:
+        SERVICE_80_NAME: bot
+        SERVICE_TAG: bot
     environment:
-      RTM_HUB_URL: http://172.23.238.239:5000/ChatHub
-      REDIS_URL: http://redis:6379
+      RTM_HUB_URL: http://13.126.8.255/rtm/ChatHub
+      REDIS_URL: http://redis
       REDIS_HOST: redis
-      REDIS_PORT: 6379
-      SOLUTION_EXPLORER_API: http://172.23.238.239:8081/api/solution
+      SOLUTION_EXPLORER_API: http://13.126.8.255/solution
     restart: always
   redis:
     image: redis:3.2-alpine
-    network_mode: host
     restart: always
