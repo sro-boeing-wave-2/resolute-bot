@@ -110,7 +110,8 @@ class Bot {
     const exec = shelljs.exec(`ansible-playbook ${this.playbookName} --extra-vars '${JSON.stringify(this.data)}' --tags "${task.tags[0]}"`);
     console.log(exec);
     if (exec.code !== 0) {
-      throw new Error('ANSIBLE_SCRIPT_EXECUTION_FAILED');
+      console.log('ANSIBLE_SCRIPT_EXECUTION_FAILED');
+      this.handover();
     }
     client.hget(this.threadId, task.register, (err, value) => {
       if (!err) {
@@ -118,7 +119,8 @@ class Bot {
         this.data[task.register] = JSON.parse(value);
         callback(null);
       } else {
-        throw new Error('REDIS_FETCH_DATA_FAILED');
+        console.log('REDIS_FETCH_DATA_FAILED');
+        this.handover();
       }
     });
   }
