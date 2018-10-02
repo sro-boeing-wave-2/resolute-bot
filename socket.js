@@ -18,6 +18,7 @@ const createConnection = async () => {
     winston.log('RTM_HUB_CONNECTION_ESTABLISHED');
     return connection;
   } catch (err) {
+    winston.error(err);
     winston.error("RTM_HUB_CONNECTION_REFUSED: Exiting Couldn't connect to RTM_HUB");
     process.exit(1);
   }
