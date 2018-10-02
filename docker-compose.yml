@@ -9,7 +9,7 @@ services:
         SERVICE_80_NAME: bot
         SERVICE_TAG: bot
     environment:
-      RTM_HUB_URL: http://13.126.8.255/ChatHub
+      RTM_HUB_URL: http://13.126.8.255/rtm/ChatHub
       REDIS_URL: http://redis
       REDIS_HOST: redis
       SOLUTION_EXPLORER_API: http://13.126.8.255/solution
