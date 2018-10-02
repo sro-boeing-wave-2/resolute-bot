@@ -10,6 +10,7 @@ RUN rm -rf /etc/ssh/ssh_host_rsa_key /etc/ssh/ssh_host_dsa_key
 RUN ssh-keygen -A
 # Start the ssh server
 RUN /usr/sbin/sshd
+RUN pip install urllib3[secure]
 # Create an hosts file
 RUN mkdir -p /etc/ansible
 RUN echo 'localhost ansible_connection=local ansible_python_interpreter=/usr/bin/python2' > /etc/ansible/hosts
