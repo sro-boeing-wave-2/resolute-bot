@@ -71,7 +71,7 @@ class Bot {
 
   handover() {
     this.sendMessage("Seems like I don't understand that. Will handover to a Human Agent.");
-    this.connection.invoke('Handover', this.threadId, this.data);
+    this.connection.invoke('Handover', this.threadId);
   }
 
   enquire(task, callback) {
