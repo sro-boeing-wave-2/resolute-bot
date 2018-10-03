@@ -6,4 +6,5 @@ module.exports = {
   BOT_NAME: 'ResoluteBot',
   BOT_EMAILID: 'bot@resolute.com  ',
   SOLUTION_EXPLORER_API: process.env.SOLUTION_EXPLORER_API ? process.env.SOLUTION_EXPLORER_API : 'http://172.23.238.239:8081/api/solution',
+  TICKET_MANAGEMENT_API: process.env.TICKET_MANAGEMENT_API ? process.env.TICKET_MANAGEMENT_API : 'http://172.23.238.239:8081/api/solution'
 };

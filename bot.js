@@ -138,6 +138,11 @@ class Bot {
     } else {
       this.intent = intent;
       this.sendMessage(`Seems like you have problem with ${this.intent.description}`);
+      var Intentconfig = {
+        headers: {'Access': 'Allow_Service'}
+      };
+      const response = await axios.put(`${appConfig.TICKET_MANAGEMENT_API}/`+this.threadId+"?intent="+this.intent,null, Intentconfig);
+      console.log(response.data);
       return intent;
     }
   }
