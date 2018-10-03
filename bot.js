@@ -20,6 +20,10 @@ const client = redis.createClient({
 const recastRequest = new recastai.request('2d1deebab9ef5a25353533ebbe53242f');
 mustache.escape = text => text;
 
+const headerOptions = {
+  headers: { Access: 'Allow_Service' },
+};
+
 class Bot {
   constructor(threadId, query) {
     this.threadId = threadId;
@@ -38,7 +42,6 @@ class Bot {
     this.assignMeToUser();
     try {
       await this.run();
-      this.connection.invoke('SolutionEnd');
     } catch (err) {
       this.handover();
     }
@@ -132,6 +135,10 @@ class Bot {
     callback(null);
   }
 
+  async updateTicket() {
+    await axios.put(`${appConfig.TICKET_MANAGEMENT_API}/${this.threadId}?intent=${this.intent.slug}`, null, headerOptions);
+  }
+
   async findProblem() {
     const response = await Bot.analyzeText(this.query);
     const intent = response.intent();
@@ -141,34 +148,26 @@ class Bot {
     } else {
       this.intent = intent;
       this.sendMessage(`Seems like you have problem with ${this.intent.description}`);
-      var Intentconfig = {
-        headers: {'Access': 'Allow_Service'}
-      };
-      const response = await axios.put(`${appConfig.TICKET_MANAGEMENT_API}/`+this.threadId+"?intent="+this.intent.slug,null, Intentconfig);
-      console.log(response.data);
+      await this.updateTicket();
       return intent;
     }
   }
 
   static async findTemplate(intent) {
     try {
-      var config = {
-        headers: {'Access': 'Allow_Service'}
-      };
-      const response = await axios.get(`${appConfig.SOLUTION_EXPLORER_API}/${intent.slug}`, config);
+      const response = await axios.get(`${appConfig.SOLUTION_EXPLORER_API}/${intent.slug}`, headerOptions);
       console.log(response.data);
       const template = response.data;
       if (!(template && template[0])) {
         console.log(template.tasks);
         throw new Error('TEMPLATE_NOT_FOUND');
-      }
-      else {
+      } else {
         const foundTemplate = template[0];
         return foundTemplate;
       }
     } catch (err) {
       console.log(err);
-      console.log("Error in Find Template");
+      console.log('Error in Find Template');
     }
   }
 
@@ -183,10 +182,12 @@ class Bot {
     const tasks = mustache.render(templateOfActionables, this, null, ['${{', '}}']);
     this.createPlaybook(this.threadId, tasks);
     const executors = template.Tasks.map(task => this[task.stage].bind(this, task));
-    await async.series(executors, (err, cb) => {
+    await async.series(executors, (err) => {
       if (err) {
         console.log(err);
         this.handover();
+      } else {
+        this.connection.invoke('SolutionEnd');
       }
     });
   }
