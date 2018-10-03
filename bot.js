@@ -38,6 +38,7 @@ class Bot {
     this.assignMeToUser();
     try {
       await this.run();
+      this.connection.invoke('SolutionEnd');
     } catch (err) {
       this.handover();
     }
@@ -70,7 +71,6 @@ class Bot {
   }
 
   handover() {
-    this.sendMessage("Seems like I don't understand that. Will handover to a Human Agent.");
     this.connection.invoke('Handover', this.threadId);
   }
 
