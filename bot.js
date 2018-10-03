@@ -144,7 +144,7 @@ class Bot {
       var Intentconfig = {
         headers: {'Access': 'Allow_Service'}
       };
-      const response = await axios.put(`${appConfig.TICKET_MANAGEMENT_API}/`+this.threadId+"?intent="+this.intent,null, Intentconfig);
+      const response = await axios.put(`${appConfig.TICKET_MANAGEMENT_API}/`+this.threadId+"?intent="+this.intent.slug,null, Intentconfig);
       console.log(response.data);
       return intent;
     }
