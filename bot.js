@@ -110,7 +110,8 @@ class Bot {
     const exec = shelljs.exec(`ansible-playbook ${this.playbookName} --extra-vars '${JSON.stringify(this.data)}' --tags "${task.tags[0]}"`);
     console.log(exec);
     if (exec.code !== 0) {
-      throw new Error('ANSIBLE_SCRIPT_EXECUTION_FAILED');
+      console.log('ANSIBLE_SCRIPT_EXECUTION_FAILED');
+      callback(new Error('ANSIBLE_SCRIPT_EXECUTION_FAILED'));
     }
     client.hget(this.threadId, task.register, (err, value) => {
       if (!err) {
@@ -118,12 +119,14 @@ class Bot {
         this.data[task.register] = JSON.parse(value);
         callback(null);
       } else {
-        throw new Error('REDIS_FETCH_DATA_FAILED');
+        console.log('REDIS_FETCH_DATA_FAILED');
+        callback(new Error('REDIS_FETCH_DATA_FAILED'));
       }
     });
   }
 
   response(task, callback) {
+    console.log(this.data);
     const response = mustache.render(task.template, this.data);
     this.sendMessage(response);
     callback(null);
@@ -180,7 +183,12 @@ class Bot {
     const tasks = mustache.render(templateOfActionables, this, null, ['${{', '}}']);
     this.createPlaybook(this.threadId, tasks);
     const executors = template.Tasks.map(task => this[task.stage].bind(this, task));
-    await async.series(executors);
+    await async.series(executors, (err, cb) => {
+      if (err) {
+        console.log(err);
+        this.handover();
+      }
+    });
   }
 }
 
