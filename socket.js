@@ -8,7 +8,7 @@ const appConfig = require('./app.config');
 // Creates a WebSocket Connection to the RTMHub
 const createConnection = async () => {
   try {
-    const serverTimeoutInMilliseconds = 1000 * 1000;
+    const serverTimeoutInMilliseconds = 10000000;
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(appConfig.RTM_HUB_URL, { serverTimeoutInMilliseconds })
       .build();
