@@ -23,10 +23,7 @@ module.exports = (async () => {
 
     connection.onclose((error) => {
       console.log('Socket connection closed', error);
-    });
-
-    connection.on('Disconnected', (msg) => {
-      console.log('Disconnected', msg);
+      process.exit(1);
     });
   }
   return connection;
