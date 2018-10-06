@@ -12,6 +12,7 @@ const createConnection = async () => {
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(appConfig.RTM_HUB_URL, { serverTimeoutInMilliseconds })
       .build();
+    connection.on('AllocateMeABot', () => { console.log('Allocating a Bot in socket.js'); });
     await connection.start();
     winston.info('RTM_HUB_CONNECTION_ESTABLISHED');
     return connection;
