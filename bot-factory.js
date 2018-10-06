@@ -14,6 +14,7 @@ module.exports = (async () => {
 
     connection.on('AllocateMeABot', async (threadId, problem) => {
       try {
+        console.log('Allocating a Bot');
         await new Bot(threadId, problem).init();
       } catch (err) {
         console.log('error', err);
