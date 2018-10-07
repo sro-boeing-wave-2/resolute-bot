@@ -75,6 +75,7 @@ class Bot {
 
   handover() {
     this.connection.invoke('Handover', this.threadId);
+    this.connection.stop();
   }
 
   enquire(task, callback) {
@@ -108,12 +109,13 @@ class Bot {
   }
 
   action(task, callback) {
-    this.sendMessage('Checking details');
+    this.sendMessage('Let me check with the details');
 
     const exec = shelljs.exec(`ansible-playbook ${this.playbookName} --extra-vars '${JSON.stringify(this.data)}' --tags "${task.tags[0]}"`);
     console.log(exec);
     if (exec.code !== 0) {
       console.log('ANSIBLE_SCRIPT_EXECUTION_FAILED');
+      this.handover();
       callback(new Error('ANSIBLE_SCRIPT_EXECUTION_FAILED'));
     }
     client.hget(this.threadId, task.register, (err, value) => {
@@ -123,6 +125,7 @@ class Bot {
         callback(null);
       } else {
         console.log('REDIS_FETCH_DATA_FAILED');
+        this.handover()
         callback(new Error('REDIS_FETCH_DATA_FAILED'));
       }
     });
@@ -170,7 +173,7 @@ class Bot {
         return foundTemplate;
       }
     } catch (err) {
-      console.log("Error in find template");
+      console.log('Error in find template');
       this.handover();
     }
   }
