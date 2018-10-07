@@ -130,6 +130,8 @@ class Bot {
 
   response(task, callback) {
     console.log(this.data);
+    console.log('Template');
+    console.log(task.template);
     const response = mustache.render(task.template, this.data);
     this.sendMessage(response);
     callback(null);
@@ -166,8 +168,8 @@ class Bot {
         return foundTemplate;
       }
     } catch (err) {
-      console.log(err);
-      console.log('Error in Find Template');
+      console.log("Error in find template");
+      this.handover();
     }
   }
 
