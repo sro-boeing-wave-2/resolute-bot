@@ -130,6 +130,8 @@ class Bot {
 
   response(task, callback) {
     console.log(this.data);
+    console.log('Added Task');
+    console.log(task);
     console.log('Template');
     console.log(task.template);
     const response = mustache.render(task.template, this.data);
