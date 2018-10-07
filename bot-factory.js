@@ -3,9 +3,7 @@ const socket = require('./socket.js');
 
 module.exports = (async () => {
   const connection = await socket.createConnection();
-  process.on('exit', () => {
-    this.connection.stop();
-  });
+
   console.log(connection);
   if (connection) {
     console.log(connection);
