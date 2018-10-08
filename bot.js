@@ -154,7 +154,7 @@ class Bot {
       throw new Error('PROBLEM_NOT_FOUND');
     } else {
       this.intent = intent;
-      this.sendMessage(`Seems like you have problem with ${this.intent.description}`);
+      //this.sendMessage(`Seems like you have problem with ${this.intent.description}`);
       await this.updateTicket();
       return intent;
     }
